@@ -217,33 +217,92 @@ export async function syncPendingQueue(): Promise<{ syncedCount: number; failedC
  */
 export const GOOGLE_APPS_SCRIPT_SAMPLE = `// ==========================================
 // Google Apps Script Web App за Пътен Лист
-// Volkswagen Taigo (СВ 8529 XH)
+// Volkswagen Taigo (СВ 8529 XH) - Мая Атанасова
+// Автоматично създава таб за всеки месец ("Ноември 2026")
 // ==========================================
+
+var SPREADSHEET_ID = ""; // Оставете празно, ако е пуснат от самата таблица
+
+var MONTHS_BG = [
+  "Януари", "Февруари", "Март", "Април", "Май", "Юни",
+  "Юли", "Август", "Септември", "Октомври", "Ноември", "Декември"
+];
+
+function getSpreadsheet() {
+  if (SPREADSHEET_ID && SPREADSHEET_ID.trim() !== "") {
+    return SpreadsheetApp.openById(SPREADSHEET_ID.trim());
+  }
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) {
+    throw new Error("Не е намерена свързана Google Таблица. Въведете SPREADSHEET_ID в кода.");
+  }
+  return ss;
+}
+
+function getMonthlySheetName(dateStr) {
+  try {
+    if (dateStr && typeof dateStr === "string" && dateStr.indexOf("-") > -1) {
+      var parts = dateStr.split("-");
+      var year = parts[0];
+      var monthIndex = parseInt(parts[1], 10) - 1;
+      if (monthIndex >= 0 && monthIndex < 12) {
+        return MONTHS_BG[monthIndex] + " " + year;
+      }
+    }
+  } catch (e) {}
+  var now = new Date();
+  return MONTHS_BG[now.getMonth()] + " " + now.getFullYear();
+}
+
+function getOrCreateMonthlySheet(ss, sheetName) {
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName, 0);
+    sheet.appendRow([
+      "Дата", "Начален км", "Краен км", "Пробег (км)", "Маршрут",
+      "Лични км", "Заредено гориво (л)", "Водач", "Рег. номер", "Време на запис"
+    ]);
+    sheet.getRange(1, 1, 1, 10)
+      .setFontWeight("bold")
+      .setBackground("#FDF5F2")
+      .setFontColor("#881337")
+      .setHorizontalAlignment("center");
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidth(1, 105);
+    sheet.setColumnWidth(2, 105);
+    sheet.setColumnWidth(3, 105);
+    sheet.setColumnWidth(4, 105);
+    sheet.setColumnWidth(5, 230);
+    sheet.setColumnWidth(6, 95);
+    sheet.setColumnWidth(7, 135);
+    sheet.setColumnWidth(8, 140);
+    sheet.setColumnWidth(9, 115);
+    sheet.setColumnWidth(10, 160);
+  }
+  return sheet;
+}
+
+function findLatestKm(ss) {
+  var sheets = ss.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    var s = sheets[i];
+    var lastRow = s.getLastRow();
+    if (lastRow > 1) {
+      var val = s.getRange(lastRow, 3).getValue();
+      var num = Number(val);
+      if (!isNaN(num) && num > 0) return num;
+    }
+  }
+  return 0;
+}
 
 function doPost(e) {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var ss = getSpreadsheet();
     var data = JSON.parse(e.postData.contents);
+    var sheetName = getMonthlySheetName(data.date);
+    var sheet = getOrCreateMonthlySheet(ss, sheetName);
     
-    // Ако таблицата е празна, създай заглавен ред:
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow([
-        "Дата",
-        "Начален км",
-        "Краен км",
-        "Пробег (км)",
-        "Маршрут",
-        "Лични км",
-        "Заредено гориво (л)",
-        "Водач",
-        "Рег. номер",
-        "Време на запис"
-      ]);
-      // Форматиране на хедъра
-      sheet.getRange(1, 1, 1, 10).setFontWeight("bold").setBackground("#FDF5F2");
-    }
-    
-    // Добавяне на новия ред с данни
     sheet.appendRow([
       data.date,
       Number(data.startKm),
@@ -257,12 +316,16 @@ function doPost(e) {
       new Date().toLocaleString("bg-BG")
     ]);
     
+    var newRowIdx = sheet.getLastRow();
+    sheet.getRange(newRowIdx, 2, 1, 3).setHorizontalAlignment("right");
+    sheet.getRange(newRowIdx, 6, 1, 2).setHorizontalAlignment("right");
+    
     return ContentService.createTextOutput(JSON.stringify({
       status: "success",
-      message: "Записът бе добавен успешно!",
+      message: "Записът бе добавен успешно в таб '" + sheetName + "'! 💖",
+      sheetName: sheetName,
       latestKm: Number(data.endKm)
     })).setMimeType(ContentService.MimeType.JSON);
-    
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({
       status: "error",
@@ -273,20 +336,13 @@ function doPost(e) {
 
 function doGet(e) {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    var lastRow = sheet.getLastRow();
-    var latestKm = 0;
-    
-    if (lastRow > 1) {
-      // Колона 3 е "Краен км"
-      latestKm = sheet.getRange(lastRow, 3).getValue();
-    }
-    
+    var ss = getSpreadsheet();
+    var latestKm = findLatestKm(ss);
     return ContentService.createTextOutput(JSON.stringify({
       status: "success",
-      latestKm: Number(latestKm)
+      latestKm: latestKm,
+      spreadsheetName: ss.getName()
     })).setMimeType(ContentService.MimeType.JSON);
-    
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({
       status: "error",
