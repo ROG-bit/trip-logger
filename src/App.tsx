@@ -7,6 +7,7 @@ import { SecondaryRow } from './components/SecondaryRow';
 import { OfflineBanner } from './components/OfflineBanner';
 import { HistoryModal } from './components/HistoryModal';
 import { SettingsModal } from './components/SettingsModal';
+import { SuccessModal } from './components/SuccessModal';
 import { Toast, ToastData } from './components/Toast';
 import { CONFIG } from './config';
 import { TripLogEntry } from './types';
@@ -19,7 +20,7 @@ import {
   sendTripLog,
   syncPendingQueue,
 } from './services/api';
-import { Send, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Send, Sparkles } from 'lucide-react';
 
 export function App() {
   // Helper for today's date
@@ -46,11 +47,13 @@ export function App() {
   const [pendingQueue, setPendingQueue] = useState<TripLogEntry[]>(() => getStoredQueue());
   const [history, setHistory] = useState<TripLogEntry[]>(() => getStoredHistory());
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
-  const [showSuccessBadge, setShowSuccessBadge] = useState<boolean>(false);
 
   // Modals & Toast
   const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState<boolean>(false);
+  const [lastSavedTrip, setLastSavedTrip] = useState<TripLogEntry | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastData | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -198,9 +201,10 @@ export function App() {
         localStorage.removeItem(CONFIG.STORAGE_KEYS.FORM_DRAFT);
         setOfflineMessage(null);
 
-        setShowSuccessBadge(true);
-        setTimeout(() => setShowSuccessBadge(false), 3000);
-        showToast(result.message || 'Пътуването е успешно записано! 💕', 'success');
+        // Open permanent confirmation modal with OK button
+        setLastSavedTrip(newTrip);
+        setSuccessMessage(result.message || 'Данните са записани в Google Таблицата! 💖');
+        setIsSuccessModalOpen(true);
       } else {
         // Underground garage / offline condition:
         // DO NOT clear inputs as per requirements!
@@ -247,16 +251,6 @@ export function App() {
           onSync={handleSyncPending}
           onDismiss={() => setOfflineMessage(null)}
         />
-
-        {/* Success Splash Indicator */}
-        {showSuccessBadge && (
-          <div className="glass-card-elevated rounded-3xl p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 text-emerald-800 flex items-center justify-center gap-2 animate-bounce-slight shadow-chic">
-            <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-            <span className="text-xs font-bold">
-              Браво, Мая! Пътният лист е записан в Google Таблицата! 💖
-            </span>
-          </div>
-        )}
 
         {/* Main Smart Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -339,6 +333,14 @@ export function App() {
         onClose={() => setIsSettingsOpen(false)}
         onUpdated={handleRefreshSettings}
         showToast={showToast}
+      />
+
+      {/* Permanent Success Confirmation Modal with OK button */}
+      <SuccessModal
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+        lastTrip={lastSavedTrip}
+        serverMessage={successMessage}
       />
     </div>
   );
