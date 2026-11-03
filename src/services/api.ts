@@ -218,7 +218,8 @@ export async function syncPendingQueue(): Promise<{ syncedCount: number; failedC
 export const GOOGLE_APPS_SCRIPT_SAMPLE = `// ==========================================
 // Google Apps Script Web App за Пътен Лист
 // Volkswagen Taigo (СВ 8529 XH) - Мая Атанасова
-// Автоматично създава таб за всеки месец ("Ноември 2026")
+// ТОЧНО СЪОТВЕТСТВИЕ С ФИРМЕНИЯ ДОКУМЕНТ (A до H):
+// A: Име на водача | B: Дата | C: Начален | D: Краен | E: Лични | F: Общо за деня | G: Гориво (л) | H: Маршрут
 // ==========================================
 
 var SPREADSHEET_ID = ""; // Оставете празно, ако е пуснат от самата таблица
@@ -237,6 +238,26 @@ function getSpreadsheet() {
     throw new Error("Не е намерена свързана Google Таблица. Въведете SPREADSHEET_ID в кода.");
   }
   return ss;
+}
+
+function formatTripDate(dateStr) {
+  if (!dateStr) return "";
+  try {
+    var parts = dateStr.split("-");
+    if (parts.length === 3) {
+      var y = parseInt(parts[0], 10);
+      var m = parseInt(parts[1], 10) - 1;
+      var d = parseInt(parts[2], 10);
+      var dateObj = new Date(y, m, d);
+      var daysEng = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      var dayName = daysEng[dateObj.getDay()];
+      var dd = ("0" + d).slice(-2);
+      var mm = ("0" + (m + 1)).slice(-2);
+      var yy = String(y).slice(-2);
+      return dd + "/" + mm + "/" + yy + " " + dayName;
+    }
+  } catch (e) {}
+  return dateStr;
 }
 
 function getMonthlySheetName(dateStr) {
@@ -258,26 +279,38 @@ function getOrCreateMonthlySheet(ss, sheetName) {
   var sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
     sheet = ss.insertSheet(sheetName, 0);
-    sheet.appendRow([
-      "Дата", "Начален км", "Краен км", "Пробег (км)", "Маршрут",
-      "Лични км", "Заредено гориво (л)", "Водач", "Рег. номер", "Време на запис"
-    ]);
-    sheet.getRange(1, 1, 1, 10)
+    sheet.getRange("A1").setValue("Име на водача");
+    sheet.getRange("B1").setValue("Дата");
+    sheet.getRange("C1:F1").merge().setValue("Пробег (км)");
+    sheet.getRange("G1").setValue("Заредено гориво\\n(л)");
+    sheet.getRange("H1").setValue("Маршрут");
+    
+    sheet.getRange("C2").setValue("Начален\\nкилометраж");
+    sheet.getRange("D2").setValue("Краен\\nкилометраж");
+    sheet.getRange("E2").setValue("Лични");
+    sheet.getRange("F2").setValue("Общо за деня");
+    
+    sheet.getRange("A1:A2").merge();
+    sheet.getRange("B1:B2").merge();
+    sheet.getRange("G1:G2").merge();
+    sheet.getRange("H1:H2").merge();
+    
+    sheet.getRange("A1:H2")
       .setFontWeight("bold")
-      .setBackground("#FDF5F2")
-      .setFontColor("#881337")
-      .setHorizontalAlignment("center");
-    sheet.setFrozenRows(1);
-    sheet.setColumnWidth(1, 105);
-    sheet.setColumnWidth(2, 105);
-    sheet.setColumnWidth(3, 105);
-    sheet.setColumnWidth(4, 105);
-    sheet.setColumnWidth(5, 230);
+      .setHorizontalAlignment("center")
+      .setVerticalAlignment("middle")
+      .setWrap(true)
+      .setBackground("#FDFBF7");
+      
+    sheet.setFrozenRows(2);
+    sheet.setColumnWidth(1, 150);
+    sheet.setColumnWidth(2, 115);
+    sheet.setColumnWidth(3, 110);
+    sheet.setColumnWidth(4, 110);
+    sheet.setColumnWidth(5, 75);
     sheet.setColumnWidth(6, 95);
-    sheet.setColumnWidth(7, 135);
-    sheet.setColumnWidth(8, 140);
-    sheet.setColumnWidth(9, 115);
-    sheet.setColumnWidth(10, 160);
+    sheet.setColumnWidth(7, 125);
+    sheet.setColumnWidth(8, 260);
   }
   return sheet;
 }
@@ -287,9 +320,9 @@ function findLatestKm(ss) {
   for (var i = 0; i < sheets.length; i++) {
     var s = sheets[i];
     var lastRow = s.getLastRow();
-    if (lastRow > 1) {
-      var val = s.getRange(lastRow, 3).getValue();
-      var num = Number(val);
+    if (lastRow > 2) {
+      var val = s.getRange(lastRow, 4).getValue();
+      var num = Number(String(val).replace(/,/g, ""));
       if (!isNaN(num) && num > 0) return num;
     }
   }
@@ -303,28 +336,38 @@ function doPost(e) {
     var sheetName = getMonthlySheetName(data.date);
     var sheet = getOrCreateMonthlySheet(ss, sheetName);
     
+    var formattedDate = formatTripDate(data.date);
+    var startKm = Number(data.startKm);
+    var endKm = Number(data.endKm);
+    var distance = Number(data.distance);
+    var personalKm = (data.personalKm && Number(data.personalKm) > 0) ? Number(data.personalKm) : "";
+    var fuel = (data.fuelLitres && Number(data.fuelLitres) > 0) ? Number(data.fuelLitres) : "";
+    var driver = data.driver || "Мая Атанасова";
+    var route = data.route || "София";
+    
     sheet.appendRow([
-      data.date,
-      Number(data.startKm),
-      Number(data.endKm),
-      Number(data.distance),
-      data.route,
-      Number(data.personalKm || 0),
-      data.fuelLitres ? Number(data.fuelLitres) : "",
-      data.driver,
-      data.plate,
-      new Date().toLocaleString("bg-BG")
+      driver,
+      formattedDate,
+      startKm,
+      endKm,
+      personalKm,
+      distance,
+      fuel,
+      route
     ]);
     
     var newRowIdx = sheet.getLastRow();
-    sheet.getRange(newRowIdx, 2, 1, 3).setHorizontalAlignment("right");
-    sheet.getRange(newRowIdx, 6, 1, 2).setHorizontalAlignment("right");
+    sheet.getRange(newRowIdx, 1).setHorizontalAlignment("left");
+    sheet.getRange(newRowIdx, 2).setHorizontalAlignment("center");
+    sheet.getRange(newRowIdx, 3, 1, 4).setHorizontalAlignment("right").setNumberFormat("#,##0");
+    sheet.getRange(newRowIdx, 7).setHorizontalAlignment("right");
+    sheet.getRange(newRowIdx, 8).setHorizontalAlignment("left");
     
     return ContentService.createTextOutput(JSON.stringify({
       status: "success",
       message: "Записът бе добавен успешно в таб '" + sheetName + "'! 💖",
       sheetName: sheetName,
-      latestKm: Number(data.endKm)
+      latestKm: endKm
     })).setMimeType(ContentService.MimeType.JSON);
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({
