@@ -96,3 +96,4 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
     </div>
   );
 };
+
