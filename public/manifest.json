@@ -1,0 +1,29 @@
+{
+  "short_name": "Taigo Log",
+  "name": "Taigo Log - Пътен Лист",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": "/trip-logger/",
+  "background_color": "#FDFBF7",
+  "theme_color": "#FDFBF7",
+  "display": "standalone",
+  "orientation": "portrait",
+  "description": "Елегантен и бърз пътен лист за Volkswagen Taigo СВ 8529 XH"
+}

@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE4E6" />
+      <stop offset="50%" stop-color="#FDA4AF" />
+      <stop offset="100%" stop-color="#FB7185" />
+    </linearGradient>
+    <linearGradient id="body" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#FFF1F2" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#E11D48" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Background rounded rect -->
+  <rect width="512" height="512" rx="128" fill="url(#bg)" />
+
+  <!-- Inner glowing circle -->
+  <circle cx="256" cy="256" r="200" fill="#FFFFFF" opacity="0.25" />
+  <circle cx="256" cy="256" r="170" fill="#FFFFFF" opacity="0.35" />
+
+  <!-- Car silhouette / chic stylized SUV -->
+  <g filter="url(#shadow)" transform="translate(0, 10)">
+    <!-- Cabin roof -->
+    <path d="M160 250 C180 200, 210 180, 260 180 C320 180, 345 205, 375 250 Z" fill="url(#body)" />
+    <!-- Window glass -->
+    <path d="M180 245 C195 210, 220 195, 260 195 C305 195, 325 210, 350 245 Z" fill="#FB7185" opacity="0.35" />
+    <!-- Window pillar -->
+    <rect x="256" y="195" width="8" height="50" rx="4" fill="#FFFFFF" opacity="0.8" />
+
+    <!-- Main Car Body -->
+    <path d="M110 280 C105 260, 125 250, 160 250 L375 250 C410 250, 430 265, 425 295 C420 325, 400 330, 370 330 L140 330 C115 330, 110 300, 110 280 Z" fill="url(#body)" />
+
+    <!-- Headlight & Taillight -->
+    <rect x="400" y="270" width="22" height="12" rx="6" fill="#FDE047" />
+    <rect x="110" y="270" width="16" height="12" rx="6" fill="#F43F5E" />
+
+    <!-- Wheels -->
+    <!-- Left wheel -->
+    <circle cx="170" cy="330" r="38" fill="#475569" />
+    <circle cx="170" cy="330" r="24" fill="#CBD5E1" />
+    <circle cx="170" cy="330" r="10" fill="#FB7185" />
+
+    <!-- Right wheel -->
+    <circle cx="340" cy="330" r="38" fill="#475569" />
+    <circle cx="340" cy="330" r="24" fill="#CBD5E1" />
+    <circle cx="340" cy="330" r="10" fill="#FB7185" />
+  </g>
+
+  <!-- Sparkles -->
+  <path d="M380 130 Q390 150 410 160 Q390 170 380 190 Q370 170 350 160 Q370 150 380 130 Z" fill="#FFFBEB" />
+  <circle cx="140" cy="150" r="8" fill="#FFFBEB" />
+  <circle cx="320" cy="130" r="5" fill="#FFFBEB" />
+  <circle cx="380" cy="390" r="7" fill="#FFFBEB" opacity="0.8" />
+  <circle cx="130" cy="380" r="5" fill="#FFFBEB" opacity="0.8" />
+</svg>
