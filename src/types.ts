@@ -34,3 +34,4 @@ export interface AppConfig {
   plateNumber: string;
   modelName: string;
 }
+

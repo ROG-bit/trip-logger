@@ -47,3 +47,4 @@ export const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
     </div>
   );
 };
+

@@ -2,7 +2,11 @@ import { CONFIG } from '../config';
 import { SubmitPayload, TripLogEntry } from '../types';
 
 export function getStoredApiUrl(): string {
-  return localStorage.getItem(CONFIG.STORAGE_KEYS.API_URL) || CONFIG.DEFAULT_API_URL;
+  const stored = localStorage.getItem(CONFIG.STORAGE_KEYS.API_URL);
+  if (stored && !stored.includes('PLACEHOLDER_FOR_GOOGLE_APPS_SCRIPT')) {
+    return stored;
+  }
+  return CONFIG.DEFAULT_API_URL;
 }
 
 export function setStoredApiUrl(url: string): void {
@@ -155,7 +159,7 @@ export async function sendTripLog(entry: TripLogEntry): Promise<{ success: boole
 
     clearTimeout(timeoutId);
 
-    if (!response.ok) {
+    if (!response.ok && response.type !== 'opaque') {
       throw new Error(`Server returned HTTP ${response.status}`);
     }
 
@@ -291,3 +295,4 @@ function doGet(e) {
   }
 }
 `;
+

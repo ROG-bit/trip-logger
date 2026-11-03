@@ -1,7 +1,7 @@
 export const CONFIG = {
-  // Google Apps Script Web App URL placeholder
-  // Replace this with your actual Google Apps Script Web App URL after deploying
-  DEFAULT_API_URL: 'https://script.google.com/macros/s/AKfycbx_PLACEHOLDER_FOR_GOOGLE_APPS_SCRIPT_WEB_APP/exec',
+  // Google Apps Script Web App URL
+  DEFAULT_API_URL: 'https://script.google.com/macros/s/AKfycbxE4W_vXc57G08Gs48ZWwAq4b1aFCGCgkDxFDZC0ept--wsmSoOQM1BUj-Y3gjYw2anww/exec',
+  DEPLOYMENT_ID: 'AKfycbxE4W_vXc57G08Gs48ZWwAq4b1aFCGCgkDxFDZC0ept--wsmSoOQM1BUj-Y3gjYw2anww',
   
   VEHICLE: {
     model: 'Volkswagen Taigo',
@@ -25,3 +25,4 @@ export const CONFIG = {
     PENDING_QUEUE: 'taigo_pending_queue',
   },
 };
+
