@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle2, Sparkles, MapPin, Gauge, Calendar, Fuel, UserCheck } from 'lucide-react';
 import { TripLogEntry } from '../types';
+import { formatBulgarianTripDate } from '../services/api';
 
 interface SuccessModalProps {
   isOpen: boolean;
@@ -48,7 +49,7 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
           <div className="flex items-center justify-between text-slate-600">
             <span className="flex items-center gap-1.5 font-bold">
               <Calendar className="w-3.5 h-3.5 text-rose-400" />
-              <span>{lastTrip.date}</span>
+              <span>{formatBulgarianTripDate(lastTrip.date)}</span>
             </span>
             <span className="font-extrabold text-rose-500 font-mono text-sm">
               +{lastTrip.distance} км

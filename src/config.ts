@@ -23,6 +23,7 @@ export const CONFIG = {
     FORM_DRAFT: 'taigo_form_draft',
     HISTORY: 'taigo_trip_history',
     PENDING_QUEUE: 'taigo_pending_queue',
+    SHEET_HISTORY: 'taigo_sheet_history',
   },
 };
 

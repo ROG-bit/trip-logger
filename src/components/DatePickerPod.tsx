@@ -1,5 +1,6 @@
 import React from 'react';
 import { Calendar as CalendarIcon, Sparkle } from 'lucide-react';
+import { formatBulgarianTripDate } from '../services/api';
 
 interface DatePickerPodProps {
   date: string;
@@ -28,19 +29,9 @@ export const DatePickerPod: React.FC<DatePickerPodProps> = ({ date, onChange }) 
   const todayStr = getTodayStr();
   const yesterdayStr = getYesterdayStr();
 
-  // Format date for Bulgarian display
+  // Format date for Bulgarian display: "05/Ноември/2026, Четвъртък"
   const formatDisplayDate = (dStr: string) => {
-    try {
-      const [year, month, day] = dStr.split('-');
-      const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      return d.toLocaleDateString('bg-BG', {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'long',
-      });
-    } catch {
-      return dStr;
-    }
+    return formatBulgarianTripDate(dStr);
   };
 
   return (
@@ -52,10 +43,17 @@ export const DatePickerPod: React.FC<DatePickerPodProps> = ({ date, onChange }) 
             <CalendarIcon className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Дата на пътуване
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Дата на пътуване
+              </span>
+              {date < todayStr && (
+                <span className="text-[10px] font-bold text-amber-700 bg-amber-100/90 px-2 py-0.5 rounded-full border border-amber-300/60 shadow-xs flex items-center gap-0.5">
+                  <span>⏪ Задна дата</span>
+                </span>
+              )}
             </div>
-            <div className="text-sm font-bold text-slate-800 capitalize">
+            <div className="text-sm font-bold text-slate-800 capitalize mt-0.5">
               {formatDisplayDate(date)}
             </div>
           </div>

@@ -6,6 +6,7 @@ interface OdometerPodProps {
   endKm: string;
   onStartKmChange: (val: number) => void;
   onEndKmChange: (val: string) => void;
+  isPastDate?: boolean;
 }
 
 export const OdometerPod: React.FC<OdometerPodProps> = ({
@@ -13,6 +14,7 @@ export const OdometerPod: React.FC<OdometerPodProps> = ({
   endKm,
   onStartKmChange,
   onEndKmChange,
+  isPastDate = false,
 }) => {
   const [isStartLocked, setIsStartLocked] = useState(true);
 
@@ -64,10 +66,15 @@ export const OdometerPod: React.FC<OdometerPodProps> = ({
       {/* Dual Card Layout for Start KM and End KM */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
         {/* "Начален км": Soft gray text with optional unlock button */}
-        <div className="bg-white/70 border border-white/80 rounded-2xl p-3.5 flex flex-col justify-between shadow-chic-sm relative group">
+        <div className={`border rounded-2xl p-3.5 flex flex-col justify-between shadow-chic-sm relative group transition-all ${
+          isPastDate ? 'bg-amber-50/50 border-amber-200/90' : 'bg-white/70 border-white/80'
+        }`}>
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">
-              Начален км
+            <span className={`text-xs font-bold uppercase tracking-wide flex items-center gap-1 ${
+              isPastDate ? 'text-amber-700' : 'text-slate-400'
+            }`}>
+              <span>Начален км</span>
+              {isPastDate && <span className="text-[10px] lowercase text-amber-600">(за деня)</span>}
             </span>
             <button
               type="button"
@@ -76,7 +83,7 @@ export const OdometerPod: React.FC<OdometerPodProps> = ({
               title={isStartLocked ? 'Отключи за ръчна корекция' : 'Заключи'}
             >
               {isStartLocked ? (
-                <Lock className="w-3.5 h-3.5 text-slate-400" />
+                <Lock className={`w-3.5 h-3.5 ${isPastDate ? 'text-amber-600' : 'text-slate-400'}`} />
               ) : (
                 <Unlock className="w-3.5 h-3.5 text-amber-500" />
               )}
@@ -85,7 +92,7 @@ export const OdometerPod: React.FC<OdometerPodProps> = ({
 
           <div className="relative">
             {isStartLocked ? (
-              <div className="text-2xl font-extrabold text-slate-500/80 font-mono tracking-tight py-1">
+              <div className="text-2xl font-extrabold text-slate-700 font-mono tracking-tight py-1">
                 {startKm.toLocaleString('bg-BG')}
                 <span className="text-xs font-normal text-slate-400 ml-1 font-sans">км</span>
               </div>
@@ -98,8 +105,12 @@ export const OdometerPod: React.FC<OdometerPodProps> = ({
                 className="w-full text-2xl font-extrabold text-slate-700 font-mono tracking-tight bg-amber-50/60 rounded-xl px-2 py-0.5 border border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300"
               />
             )}
-            <span className="text-[10px] text-slate-400 block mt-0.5">
-              {isStartLocked ? 'Автоматично от последен запис' : 'Ръчно редактиране'}
+            <span className={`text-[10px] block mt-0.5 ${
+              isPastDate ? 'text-amber-700 font-medium' : 'text-slate-400'
+            }`}>
+              {isPastDate
+                ? (isStartLocked ? '🗓️ От предходен запис • Кликни катинара за редакция' : '✏️ Ръчно редактиране за този ден')
+                : (isStartLocked ? 'Автоматично от последен запис' : 'Ръчно редактиране')}
             </span>
           </div>
         </div>

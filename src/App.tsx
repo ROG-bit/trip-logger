@@ -10,7 +10,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { SuccessModal } from './components/SuccessModal';
 import { Toast, ToastData } from './components/Toast';
 import { CONFIG } from './config';
-import { TripLogEntry } from './types';
+import { TripLogEntry, SheetTripEntry } from './types';
 import {
   getStoredLastKm,
   setStoredLastKm,
@@ -19,8 +19,12 @@ import {
   fetchLatestKmFromApi,
   sendTripLog,
   syncPendingQueue,
+  findTripForDate,
+  getSuggestedStartKmForDate,
+  formatBulgarianTripDate,
+  getNextDayStr,
 } from './services/api';
-import { Send, Sparkles } from 'lucide-react';
+import { Send, Sparkles, AlertCircle, Pencil } from 'lucide-react';
 
 export function App() {
   // Helper for today's date
@@ -47,6 +51,29 @@ export function App() {
   const [pendingQueue, setPendingQueue] = useState<TripLogEntry[]>(() => getStoredQueue());
   const [history, setHistory] = useState<TripLogEntry[]>(() => getStoredHistory());
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+  const [existingTripForDate, setExistingTripForDate] = useState<SheetTripEntry | TripLogEntry | null>(null);
+
+  // Date Change Handler with Smart Retroactive Logic
+  const handleDateChange = (newDate: string) => {
+    setDate(newDate);
+    const today = getTodayDate();
+    if (newDate < today) {
+      // Past date: check existing trip or suggest start km from prior day
+      const existing = findTripForDate(newDate);
+      if (existing) {
+        setExistingTripForDate(existing);
+      } else {
+        setExistingTripForDate(null);
+        const suggested = getSuggestedStartKmForDate(newDate);
+        if (suggested && suggested > 0) {
+          setStartKm(suggested);
+        }
+      }
+    } else {
+      setExistingTripForDate(null);
+      setStartKm(getStoredLastKm());
+    }
+  };
 
   // Modals & Toast
   const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
@@ -192,9 +219,28 @@ export function App() {
       const result = await sendTripLog(newTrip);
 
       if (result.success) {
-        // Online success: advance startKm and clear inputs
-        setStartKm(parsedEnd);
-        setStoredLastKm(parsedEnd);
+        const today = getTodayDate();
+        const currentStored = getStoredLastKm();
+        const nextDay = getNextDayStr(date);
+        const shouldAdvanceToNextDay = date < today && nextDay <= today;
+
+        if (shouldAdvanceToNextDay) {
+          // Smooth chain! Advance date to next day and set its startKm to this trip's endKm!
+          setDate(nextDay);
+          setStartKm(parsedEnd);
+          setStoredLastKm(parsedEnd);
+          const nextDayExisting = findTripForDate(nextDay);
+          setExistingTripForDate(nextDayExisting);
+        } else {
+          if (parsedEnd > currentStored) {
+            setStoredLastKm(parsedEnd);
+            setStartKm(parsedEnd);
+          }
+          setDate(today);
+          setExistingTripForDate(null);
+        }
+
+        // Reset inputs
         setEndKm('');
         setFuelLitres('');
         setPersonalKm('0');
@@ -203,7 +249,12 @@ export function App() {
 
         // Open permanent confirmation modal with OK button
         setLastSavedTrip(newTrip);
-        setSuccessMessage(result.message || 'Данните са записани в Google Таблицата! 💖');
+        const nextDayLabel = shouldAdvanceToNextDay ? formatBulgarianTripDate(nextDay) : '';
+        setSuccessMessage(
+          shouldAdvanceToNextDay
+            ? `Записът за ${formatBulgarianTripDate(date)} бе нанесен успешно (+${distance} км)! Готови сте за ${nextDayLabel} (начален км: ${parsedEnd.toLocaleString('bg-BG')}). 💖`
+            : result.message || 'Данните са записани в Google Таблицата! 💖'
+        );
         setIsSuccessModalOpen(true);
       } else {
         // Underground garage / offline condition:
@@ -255,7 +306,37 @@ export function App() {
         {/* Main Smart Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Date Picker Pod */}
-          <DatePickerPod date={date} onChange={setDate} />
+          <DatePickerPod date={date} onChange={handleDateChange} />
+
+          {/* Retroactive Existing Entry Banner */}
+          {existingTripForDate && (
+            <div className="bg-amber-50/95 border border-amber-200/90 rounded-2xl p-3 flex items-center justify-between text-xs text-amber-900 shadow-sm animate-fade-in">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                <div>
+                  <div className="font-bold">Вече има въведен запис за тази дата:</div>
+                  <div className="text-[11px] text-amber-800">
+                    {existingTripForDate.startKm.toLocaleString('bg-BG')} → {existingTripForDate.endKm.toLocaleString('bg-BG')} км ({existingTripForDate.route})
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setStartKm(existingTripForDate.startKm);
+                  setEndKm(String(existingTripForDate.endKm));
+                  setRoute(existingTripForDate.route);
+                  setPersonalKm(String(existingTripForDate.personalKm || 0));
+                  setFuelLitres(existingTripForDate.fuelLitres ? String(existingTripForDate.fuelLitres) : '');
+                  showToast('Данните за тази дата бяха заредени във формата! ✏️', 'info');
+                }}
+                className="px-2.5 py-1.5 bg-amber-200 hover:bg-amber-300 text-amber-900 rounded-xl font-bold touch-bouncy shrink-0 flex items-center gap-1 shadow-xs ml-2"
+              >
+                <Pencil className="w-3 h-3 text-amber-800" />
+                <span>Зареди ✏️</span>
+              </button>
+            </div>
+          )}
 
           {/* Odometer Pod (Dual Card: Start KM & End KM + live difference badge) */}
           <OdometerPod
@@ -263,6 +344,7 @@ export function App() {
             endKm={endKm}
             onStartKmChange={setStartKm}
             onEndKmChange={setEndKm}
+            isPastDate={date < getTodayDate()}
           />
 
           {/* Route Selection (Frequent route pills + custom input) */}
